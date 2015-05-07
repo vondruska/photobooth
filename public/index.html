@@ -15,6 +15,12 @@
     }
   });
 
+<!-- make the sound effect happen -->  
+var beep = document.createElement('audio');
+beep.setAttribute('src', 'photobeep.ogg');
+var pictureAudio = document.createElement('audio');
+pictureAudio.setAttribute('src', 'picturetaken.ogg');
+
 $(function() {
 
 	$('#camera').webcam({
