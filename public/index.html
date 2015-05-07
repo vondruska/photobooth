@@ -101,6 +101,9 @@ function StartCapture() {
 	          width: $('body').width() + 'px',
 	          top: ($('body').height() - $('#countdown').outerHeight())/2
 	        });
+			
+			beep.currentTime = 0;
+	      	beep.play();
 
 	      /* starts the countdown visually at three. but we have 3,2,1,cheese,take picture
 	      /* so it is a four second countdown */
@@ -125,6 +128,8 @@ function StartCapture() {
 
 
     function capture() {
+		pictureAudio.currentTime = 0;
+		pictureAudio.play();
 		$('#countdown').hide().text(''); // hide the visual countdown
 
 		var randomNumber = Math.floor(Math.random()*textArray.length);  // generate a number from the array of thank you messages
