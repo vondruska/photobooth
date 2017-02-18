@@ -1,0 +1,23 @@
+{
+  "name": "photobooth",
+  "version": "1.0.0",
+  "description": "photobooth ==========",
+  "main": "photobooth.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vondruska/photobooth.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vondruska/photobooth/issues"
+  },
+  "homepage": "https://github.com/vondruska/photobooth#readme",
+  "dependencies": {
+    "express": "^4.14.1",
+    "socket.io": "^1.7.3"
+  }
+}
