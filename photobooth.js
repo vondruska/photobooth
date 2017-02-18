@@ -30,7 +30,6 @@ ruby.on('exit', function (code) {
 server.listen(8080);
 
 app.use(express.static(__dirname + '/public'));
-app.use(express.bodyParser());
 
 // display the UI to the browser
 app.get('/', function(req,res) {
@@ -42,13 +41,14 @@ app.get('/', function(req,res) {
 // in turn tells the photobooth UI in the browser to start the picture countdown
 app.get('/buttonpush', function(req,res) {
   io.sockets.emit('photobooth', { take: 'picture' });
-  res.send( "OK", 200  );  // tell the ruby script we're good!
+  res.status(200).send("OK");  // tell the ruby script things are okay
 });
 
 // the browser/flash script would like us to save a photo
 app.post('/upload', function(req,res) {
 	console.log('taking picture');
-  var img = req.param("image");  // the flash uploader uses the param "image"
+  var img = req.params.image;  // the flash uploader uses the param "image"
+console.log(req.params);
 	var decodedImage = new Buffer(img, 'base64'); // the image comes over base64 encoded, so we need to decode it
 	var fs = require("fs");
 	var ts = Date.now() / 1000;
