@@ -19,6 +19,7 @@ pictureAudio.setAttribute('src', 'picturetaken.ogg');
   var canvas = null;
   var photo = null;
   var cameraStream = null;
+  var coundownToCaptureInterval = null
 
 function startCameraStream() {
   // if we've started the stream and we call this again, we should stop everything and start again.
@@ -52,6 +53,8 @@ startCameraStream();
     }, false);
     
     clearphoto();
+
+    document.getElementById('fullscreen').addEventListener('click', DoFullScreen);
   }
 
   // Fill the photo with an indication that none has been
@@ -100,9 +103,10 @@ startCameraStream();
     }
   });
   
+  
   document.addEventListener("keydown", function(e) {
   if(e.keyCode == 32) {
-    StartCapture();
+    requestCapture();
   }
   if(e.keyCode == 122) {
     e.preventDefault();
@@ -130,11 +134,28 @@ startCameraStream();
 
         function doHideShowFullScreen(isCurrentlyFullScreen) {
           console.log('doHideShow');
+          // restart camera stream on full screen
+          // this allows the video element to detect the new height/width since fullscreen doesn't trigger resize
           startCameraStream();
+
           $('#fullscreen-msg').toggle(!isCurrentlyFullScreen);
           $('body').toggleClass('fullscreen', isCurrentlyFullScreen);
         }
   
+
+  function requestCapture() {
+    if(captureStatus == CaptureStatusEnum.REVIEW) {
+      resetToReady();
+    }
+
+    else if(captureStatus == CaptureStatusEnum.READY) {
+      StartCapture();
+    }
+
+    else if(captureStatus == CaptureStatusEnum.COUNTDOWN) {
+      abortCountdown();
+    }
+  }
   function StartCapture() {
 		// prevent from starting a capture twice
 		if(captureStatus != CaptureStatusEnum.READY)
@@ -159,7 +180,7 @@ startCameraStream();
 	      var counter = 4;
 
 	      // this is the actual countdown
-	      interval = setInterval(function() {
+	      coundownToCaptureInterval = setInterval(function() {
 
 	          counter--;
 	          $('#countdown').text(counter - 1);
@@ -169,7 +190,7 @@ startCameraStream();
 	          }
 	          
 	          else if (counter == 0) {
-	              clearInterval(interval);  // stop counting down so no negitive numbers!
+	              clearInterval(coundownToCaptureInterval);  // stop counting down so no negitive numbers!
 	              takepicture(); // actually fire the capture sequence
 				  takepictureUI();
 	          }
@@ -191,7 +212,6 @@ startCameraStream();
 		// show the camera flash here. then tell the webcam to stop pulling the video feed from the webcam
 		$('#camera-flash').show();
 		$('video').hide();
-					$('img').show();
 		
 		$('#camera-flash').fadeOut(1000, function() {		
 			setTimeout(resetToReady, 3500);
@@ -199,26 +219,20 @@ startCameraStream();
   }
   
   function resetToReady() {
-					$('#thanks').hide();
+    if(captureStatus != CaptureStatusEnum.READY) {
+					$('#thanks, #countdown').hide();
 					$('#welcome-msg').show();
 					$('video').show();
-					$('img').hide();
           clearphoto(); 
 					captureStatus = CaptureStatusEnum.READY; // enable capturing again
+    }
+  }
+
+  function abortCountdown() {
+    clearInterval(coundownToCaptureInterval);
+    resetToReady();
   }
 })();
-
-
-$(function() {
-
-	// debugging functions. space bar is much easier to push during development
-
-
-	// make it easier to run for a non-tech savy person
-    $('#fullscreen').click(function(e) {
-		DoFullScreen();
-	});
-});
 
 /* a text array of thank you messages. randomly selected in capture() */
 var textArray = ['Looks good! Thanks!', 'Stellar picture!', 'You rock!', 'Why did you break the camera?', 'Awesome!', ':)'];
