@@ -2,12 +2,11 @@
 <head>
 <title>Photobooth</title>
 <script type="text/javascript" src="jquery.js"></script> <!-- jquery hosted locally the venue has no internet -->
-<script type="text/javascript" src="jquery.webcam.as3.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 	/* some wiring up so we can listen to socket.io events, like the button push */
   var socket = io.connect('http://localhost:8080');
-
+var CaptureStatusEnum = Object.freeze({READY: 0, COUNTDOWN: 1, REVIEW: 2});
 
 var beep = document.createElement('audio');
 beep.setAttribute('src', 'photobeep.ogg');
@@ -15,32 +14,20 @@ var pictureAudio = document.createElement('audio');
 pictureAudio.setAttribute('src', 'picturetaken.ogg');
 
 (function() {
-  // The width and height of the captured photo. We will set the
-  // width to the value defined here, but the height will be
-  // calculated based on the aspect ratio of the input stream.
-
-  var width = window.innerWidth
-|| document.documentElement.clientWidth
-|| document.body.clientWidth;    // We will scale the photo width to this
-  var height = 0;     // This will be computed based on the input stream
-
-  // |streaming| indicates whether or not we're currently streaming
-  // video from the camera. Obviously, we start at false.
-
-  var streaming = false;
-
-  // The various HTML elements we need to configure or control. These
-  // will be set by the startup() function.
 
   var video = null;
   var canvas = null;
   var photo = null;
   var cameraStream = null;
+
 function startCameraStream() {
+  // if we've started the stream and we call this again, we should stop everything and start again.
+  // this prevent some "fun" issues with video sizing (especially in Chrome)
 if(cameraStream) {
   cameraStream.getTracks()[0].stop();
 }
-navigator.mediaDevices.getUserMedia({video: {width: {exact: 1280}, height: {exact: 720}}})
+
+navigator.mediaDevices.getUserMedia({video: {width: {exact: 1280}, height: {exact:720}}})
 .then(function(stream) {
   cameraStream = stream;
   video.src = window.URL.createObjectURL(stream);
@@ -59,22 +46,8 @@ navigator.mediaDevices.getUserMedia({video: {width: {exact: 1280}, height: {exac
 startCameraStream();
 
     video.addEventListener('canplay', function(ev){
-      if (!streaming) {
-        height = video.videoHeight / (video.videoWidth/width);
-      
-        // Firefox currently has a bug where the height can't be read from
-        // the video, so we will make assumptions if this happens.
-      
-        if (isNaN(height)) {
-          height = width / (4/3);
-        }
-      
-        //video.setAttribute('width', width);
-        //video.setAttribute('height', height);
         canvas.setAttribute('width', video.videoWidth);
         canvas.setAttribute('height', video.videoHeight);
-        streaming = true;
-      }
       $('body').addClass('camera-ready');
     }, false);
     
@@ -91,7 +64,7 @@ startCameraStream();
 
     var data = canvas.toDataURL('image/png');
     //photo.setAttribute('src', data);
-    document.getElementById('output').style.backgroundImage = 'url(' + data + ')';
+    document.getElementById('output').style.backgroundImage = null;
   }
   
   // Capture a photo by fetching the current contents of the video
@@ -103,7 +76,6 @@ startCameraStream();
   function takepicture() {
   console.log('picture take');
     var context = canvas.getContext('2d');
-    if (width && height) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
@@ -112,10 +84,8 @@ startCameraStream();
       //photo.setAttribute('src', data);
       document.getElementById('output').style.backgroundImage = 'url(' + data + ')';
       document.getElementById('output').style.display = 'block';
-	  $.post('/upload', {image: data}, function() { clearPhoto(); });
-    } else {
-      clearphoto();
-    }
+	    $.post('/upload', {image: data});
+      captureStatus = CaptureStatusEnum.REVIEW;
   }
 
   // Set up our event listener to run the startup process
@@ -167,9 +137,9 @@ startCameraStream();
   
   function StartCapture() {
 		// prevent from starting a capture twice
-		if(isCapturing)
+		if(captureStatus != CaptureStatusEnum.READY)
 			return;
-		isCapturing = true;
+		captureStatus = CaptureStatusEnum.COUNTDOWN;
 
 		// hide the welcome message
     	$('#welcome-msg').hide();
@@ -223,18 +193,19 @@ startCameraStream();
 		$('video').hide();
 					$('img').show();
 		
-		$('#camera-flash').fadeOut(1000, function() {
-		 
-					
-			setTimeout(function() {
+		$('#camera-flash').fadeOut(1000, function() {		
+			setTimeout(resetToReady, 3500);
+		});
+  }
+  
+  function resetToReady() {
 					$('#thanks').hide();
 					$('#welcome-msg').show();
 					$('video').show();
 					$('img').hide();
-					isCapturing = false; // enable capturing again
-				}, 3500);
-		});
-		}
+          clearphoto(); 
+					captureStatus = CaptureStatusEnum.READY; // enable capturing again
+  }
 })();
 
 
@@ -247,14 +218,12 @@ $(function() {
     $('#fullscreen').click(function(e) {
 		DoFullScreen();
 	});
-
-  $('window').resize()
 });
 
 /* a text array of thank you messages. randomly selected in capture() */
 var textArray = ['Looks good! Thanks!', 'Stellar picture!', 'You rock!', 'Why did you break the camera?', 'Awesome!', ':)'];
 
-var isCapturing = false;
+var captureStatus = CaptureStatusEnum.READY;
 
 
       function DoFullScreen() {
