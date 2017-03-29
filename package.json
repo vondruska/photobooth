@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/vondruska/photobooth#readme",
   "dependencies": {
+    "body-parser": "^1.16.1",
     "express": "^4.14.1",
     "socket.io": "^1.7.3"
   }
